@@ -25,9 +25,6 @@ import java.util.List;
 @Log
 public class GoogleServiceBean implements GoogleService{
 
-
-    private final String ID = "790321029835-hn99hj518of9a0m5r5ljactgfjiua8jp.apps.googleusercontent.com";
-    private final String SECRET = "vUYlYYIY2qCJQ74dE2Ajvbpo";
     private final List<String> SCOPES = Arrays.asList(
             "https://www.googleapis.com/auth/userinfo.profile",
             "https://www.googleapis.com/auth/userinfo.email");
