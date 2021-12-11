@@ -1,5 +1,6 @@
 package com.ilmnq.oauthFacade.controllers.google;
 
+import com.ilmnq.oauthFacade.services.GoogleScopeBuilder;
 import com.ilmnq.oauthFacade.services.GoogleService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,7 +18,14 @@ public class GoogleControllerImpl {
 
     @Autowired
     GoogleService googleService;
+    @Autowired
+    GoogleScopeBuilder googleScopeBuilder;
 
+    /**
+     * Builds an authorization link with default info scope (name, phone, email, birthday)
+     *
+     * @return Google authorization link
+     */
     @GetMapping("requestDefaultAuthorizeUrl")
     public ResponseEntity<String> requestDefaultAuthorizeUrl(){
         return new ResponseEntity<>(googleService.getLoginUrl(), HttpStatus.OK);
@@ -25,8 +33,9 @@ public class GoogleControllerImpl {
 
     @GetMapping("requestCustomAuthorizeUrl")
     public ResponseEntity<String> requestCustomAuthorizeUrl(@RequestParam String scopes){
-        //распарсить строку типа "email;name;phone" на скопы?
-        return new ResponseEntity<>("placeholder", HttpStatus.OK);
+        return new ResponseEntity<>(
+                googleService.getLoginUrl(
+                        googleScopeBuilder.buildScope(scopes)), HttpStatus.OK);
     }
 
     //получение информации через код аутентификации
@@ -38,10 +47,18 @@ public class GoogleControllerImpl {
                 new ResponseEntity<>(new ScopeResponseDTO(null, "failed to acquire user info"), HttpStatus.NOT_FOUND);
     }
 
+    @GetMapping("/requestCustomUserInfo")
+    public ResponseEntity<ScopeResponseDTO> requestUserInfo(
+            @RequestParam String code,
+            @RequestParam String scope){
+        return new ResponseEntity<>(new ScopeResponseDTO(null, "failed to acquire user info"), HttpStatus.NOT_FOUND);
+    }
+
     @AllArgsConstructor
     private static class ScopeResponseDTO{
         @Getter @Setter
         private HashMap<String, String> scopeValues;
+        @Getter @Setter
         private String statusMessage;
     }
 

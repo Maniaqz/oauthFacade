@@ -1,5 +1,7 @@
 package com.ilmnq.oauthFacade;
 
+import com.ilmnq.oauthFacade.services.GoogleScopeBuilder;
+import com.ilmnq.oauthFacade.services.GoogleScopeBuilderImpl;
 import com.ilmnq.oauthFacade.services.GoogleService;
 import com.ilmnq.oauthFacade.services.GoogleServiceBean;
 import org.springframework.context.annotation.Bean;
@@ -12,5 +14,9 @@ public class OauthFacadeFactoryConfiguration {
     @Bean
     GoogleService googleService(){
         return new GoogleServiceBean();
+    }
+    @Bean
+    GoogleScopeBuilder googleScopeBuilder(){
+        return new GoogleScopeBuilderImpl();
     }
 }

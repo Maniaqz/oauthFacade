@@ -27,7 +27,10 @@ public class GoogleServiceBean implements GoogleService{
 
     private final List<String> SCOPES = Arrays.asList(
             "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email");
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/user.phonenumbers.read",
+            "https://www.googleapis.com/auth/user.gender.read",
+            "https://www.googleapis.com/auth/user.birthday.read");
 
 
     @Autowired
@@ -43,8 +46,11 @@ public class GoogleServiceBean implements GoogleService{
 
     //TODO: работа с кастомным скоуп
     @Override
-    public String getLoginUrl(String appUrl, List<String> scopes) {
-        return null;
+    public String getLoginUrl(List<String> scopes) {
+        return getFlow(scopes)
+                .newAuthorizationUrl()
+                .setRedirectUri(googleConfig.getCurrentAppUrl())
+                .build();
     }
 
     public String getAccessToken(String code) {
@@ -65,20 +71,22 @@ public class GoogleServiceBean implements GoogleService{
     public HashMap<String, String> getUserDataMap(String code) {
         Person person;
         try {
-            PeopleService peopleService = getUserService(getAccessToken(code));
-            person = peopleService.people().get("people/me").setPersonFields("names,emailAddresses").execute();
+            PeopleService peopleService = getPeopleService(getAccessToken(code));
+            //TODO:разобраться, есть ли смысл динамически вставлять поля PersonFields
+            // или  же можно сразу сделать общий запрос, и поля без доступа просто проигнорируются
+            person = peopleService.people().get("people/me").setPersonFields("names,emailAddresses,genders,phoneNumbers,birthdays").execute();
         } catch (Exception e){
             log.severe("Can't get user data");
             return null;
         }
+
+        HashMap<String, String> returnHashMap = new HashMap<>();
 
         List<EmailAddress> emails = person.getEmailAddresses();
         if (emails.size() <= 0) {
             log.severe("Emails size 0");
             return null;
         }
-
-        HashMap<String, String> returnHashMap = new HashMap<>();
 
         Name names = person.getNames().get(0);
 
@@ -91,8 +99,8 @@ public class GoogleServiceBean implements GoogleService{
 
         return returnHashMap;
     }
-//
-    protected PeopleService getUserService(String accessToken) {
+
+    protected PeopleService getPeopleService(String accessToken) {
         try {
             GoogleCredentials credentials = GoogleCredentials.create(new AccessToken(accessToken, null));
             HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
@@ -135,8 +143,6 @@ public class GoogleServiceBean implements GoogleService{
                     googleConfig.getClientId(),
                     googleConfig.getSecret(),
                     scopes)
-                    .setAccessType("offline")
-                    .setApprovalPrompt("force")
                     .build();
         } catch (Exception e) {
             log.severe("Failed to prepare Google Authorization workflow");

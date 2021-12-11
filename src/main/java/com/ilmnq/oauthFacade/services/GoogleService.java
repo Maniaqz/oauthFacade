@@ -18,13 +18,12 @@ public interface GoogleService {
     /**
      * Get custom Google login page URL
      *
-     * @param appUrl application URL
      * @param scopes custom info-fetch scope
      *
      * @return Google login URL, which will return authentication code upon
      * successful authorization
      */
-    String getLoginUrl(String appUrl, List<String> scopes);
+    String getLoginUrl(List<String> scopes);
 
     String getAccessToken(String code);
 
