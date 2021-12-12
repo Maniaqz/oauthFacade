@@ -29,6 +29,6 @@ public interface GoogleService {
 
 //    String getAccessToken(String appUrl, String code);
 
-    HashMap<String, String> getUserDataMap(String accessToken);
+    HashMap<String, Object> getUserDataMap(String accessToken);
 
 }

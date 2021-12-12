@@ -41,7 +41,7 @@ public class GoogleControllerImpl {
     //получение информации через код аутентификации
     @GetMapping("/requestUserInfo")
     public ResponseEntity<ScopeResponseDTO> requestUserInfo(@RequestParam String code){
-        HashMap <String, String> returnMap = googleService.getUserDataMap(code);
+        HashMap <String, Object> returnMap = googleService.getUserDataMap(code);
         return !returnMap.isEmpty() ?
                 new ResponseEntity<>(new ScopeResponseDTO(returnMap, "success"), HttpStatus.OK) :
                 new ResponseEntity<>(new ScopeResponseDTO(null, "failed to acquire user info"), HttpStatus.NOT_FOUND);
@@ -57,7 +57,7 @@ public class GoogleControllerImpl {
     @AllArgsConstructor
     private static class ScopeResponseDTO{
         @Getter @Setter
-        private HashMap<String, String> scopeValues;
+        private HashMap<String, Object> scopeValues;
         @Getter @Setter
         private String statusMessage;
     }
