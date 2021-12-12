@@ -15,5 +15,9 @@ public class GoogleUser {
     @Getter @Setter
     private UUID id;
     @Getter @Setter
+    private String name;
+    @Getter @Setter
+    private String email;
+    @Getter @Setter
     private Object data;
 }

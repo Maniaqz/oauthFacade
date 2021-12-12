@@ -26,6 +26,8 @@ public class GoogleControllerImpl {
     GoogleScopeBuilder googleScopeBuilder;
     @Autowired
     DataManagingService dataManagingService;
+    @Autowired
+    GoogleUserRepository googleUserRepository;
 
     /**
      * Builds an authorization link with default info scope (name, phone, email, birthday)
@@ -44,7 +46,8 @@ public class GoogleControllerImpl {
                         googleScopeBuilder.buildScope(scopes)), HttpStatus.OK);
     }
 
-    //получение информации через код аутентификации
+    //TODO: подумать над тем, чтобы вне зависимости от скоупа всегда запрашивало
+    // какие-то поля типа Имени, Почты, Телефона, мб всего вместе
     @GetMapping("/requestUserInfo")
     public ResponseEntity<ScopeResponseDTO> requestUserInfo(@RequestParam String code,
                                                             @RequestParam String scope,
@@ -52,7 +55,7 @@ public class GoogleControllerImpl {
         HashMap <String, Object> returnMap = googleService.getUserDataMap(code);
 
         if (!returnMap.isEmpty() & Boolean.TRUE.equals(saveData)){
-            dataManagingService.saveGoogleUser(returnMap);
+            dataManagingService.saveGoogleUserByMap(returnMap);
         }
 
         return !returnMap.isEmpty() ?
@@ -65,6 +68,14 @@ public class GoogleControllerImpl {
             @RequestParam String code,
             @RequestParam String scope){
         return new ResponseEntity<>(new ScopeResponseDTO(null, "failed to acquire user info"), HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/findGoogleUserByEmail")
+    public ResponseEntity<GoogleUser> findGoogleUserByEmail(@RequestParam String email){
+        GoogleUser googleUser = googleUserRepository.findByEmail(email);
+        return googleUser != null ?
+                new ResponseEntity<>(googleUser,HttpStatus.OK) :
+                new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
 
     @AllArgsConstructor
