@@ -8,6 +8,7 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.people.v1.PeopleService;
+import com.google.api.services.people.v1.model.Birthday;
 import com.google.api.services.people.v1.model.EmailAddress;
 import com.google.api.services.people.v1.model.Name;
 import com.google.api.services.people.v1.model.Person;
@@ -16,8 +17,11 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.ilmnq.oauthFacade.config.GoogleConfig;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -68,34 +72,61 @@ public class GoogleServiceBean implements GoogleService{
 
 
     @Override
-    public HashMap<String, String> getUserDataMap(String code) {
+    public HashMap<String, Object> getUserDataMap(String code) {
         Person person;
         try {
             PeopleService peopleService = getPeopleService(getAccessToken(code));
             //TODO:разобраться, есть ли смысл динамически вставлять поля PersonFields
             // или  же можно сразу сделать общий запрос, и поля без доступа просто проигнорируются
-            person = peopleService.people().get("people/me").setPersonFields("names,emailAddresses,genders,phoneNumbers,birthdays").execute();
+            person = peopleService.people().get("people/me").setPersonFields("addresses,ageRanges,biographies,birthdays," +
+                    "braggingRights,coverPhotos,emailAddresses," +
+                    "events,genders,imClients,interests,locales," +
+                    "memberships,metadata,names,nicknames,occupations," +
+                    "organizations,phoneNumbers,photos,relations,relationshipInterests," +
+                    "relationshipStatuses,residences,skills,taglines,urls")
+                    .execute();
         } catch (Exception e){
             log.severe("Can't get user data");
             return null;
         }
 
-        HashMap<String, String> returnHashMap = new HashMap<>();
+        HashMap<String, Object> returnHashMap = new HashMap<>();
 
-        List<EmailAddress> emails = person.getEmailAddresses();
-        if (emails.size() <= 0) {
-            log.severe("Emails size 0");
-            return null;
-        }
 
-        Name names = person.getNames().get(0);
+        //TODO: возможно стоит разбить метод на дефолтный и кастомный,
+        // и в кастомный передавать строку с запросом
+        String dynamicTestString = "names,emailAddresses,birthdays";
+        person.getNames().get(0).getDisplayName();
+        ArrayList<String> fetchingAttributes = new ArrayList<>(Arrays.asList(dynamicTestString.split(",", 0)));
+        fetchingAttributes.forEach(entry ->{
+            try {
+                Method methodToCall = person.getClass().getDeclaredMethod("get"+ StringUtils.capitalize(entry));
+                List<Object> objectList = (List<Object>) methodToCall.invoke(person);
+                if (!objectList.isEmpty()){
+                    Method additionalMethod = null;
+                    switch (entry){
+                        case "names":
+                            additionalMethod = Name.class.getDeclaredMethod("getDisplayName");
+                            break;
+                        case "emailAddresses":
+                            additionalMethod = EmailAddress.class.getDeclaredMethod("getValue");
+                            break;
+                        case "birthdays":
+                            //можно использовать getText()
+                            additionalMethod = Birthday.class.getDeclaredMethod("getDate");
+                            break;
+                    }
 
-        returnHashMap.put("email", emails.get(0).getValue());
-        returnHashMap.put("id", "");
-        returnHashMap.put("name", names.getDisplayName());
-        returnHashMap.put("firstName", names.getDisplayName() == null ? null : names.getGivenName());
-        returnHashMap.put("middleName", names.getDisplayName() == null ? null : names.getMiddleName());
-        returnHashMap.put("lastName", names.getDisplayName() == null ? null : names.getFamilyName());
+                    if (additionalMethod != null){
+                        returnHashMap.put(entry, additionalMethod.invoke(objectList.get(0)));
+                    }
+
+                }
+
+            } catch (Exception e){
+                log.severe("sneed");
+            }
+        });
 
         return returnHashMap;
     }
