@@ -1,5 +1,8 @@
 package com.ilmnq.oauthFacade.controllers.google;
 
+import com.ilmnq.oauthFacade.data.entities.google.GoogleUser;
+import com.ilmnq.oauthFacade.data.repositories.GoogleUserRepository;
+import com.ilmnq.oauthFacade.services.DataManagingService;
 import com.ilmnq.oauthFacade.services.GoogleScopeBuilder;
 import com.ilmnq.oauthFacade.services.GoogleService;
 import lombok.AllArgsConstructor;
@@ -11,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/google")
@@ -20,6 +24,8 @@ public class GoogleControllerImpl {
     GoogleService googleService;
     @Autowired
     GoogleScopeBuilder googleScopeBuilder;
+    @Autowired
+    DataManagingService dataManagingService;
 
     /**
      * Builds an authorization link with default info scope (name, phone, email, birthday)
@@ -40,8 +46,15 @@ public class GoogleControllerImpl {
 
     //получение информации через код аутентификации
     @GetMapping("/requestUserInfo")
-    public ResponseEntity<ScopeResponseDTO> requestUserInfo(@RequestParam String code){
+    public ResponseEntity<ScopeResponseDTO> requestUserInfo(@RequestParam String code,
+                                                            @RequestParam String scope,
+                                                            @RequestParam Boolean saveData){
         HashMap <String, Object> returnMap = googleService.getUserDataMap(code);
+
+        if (!returnMap.isEmpty() & Boolean.TRUE.equals(saveData)){
+            dataManagingService.saveGoogleUser(returnMap);
+        }
+
         return !returnMap.isEmpty() ?
                 new ResponseEntity<>(new ScopeResponseDTO(returnMap, "success"), HttpStatus.OK) :
                 new ResponseEntity<>(new ScopeResponseDTO(null, "failed to acquire user info"), HttpStatus.NOT_FOUND);
