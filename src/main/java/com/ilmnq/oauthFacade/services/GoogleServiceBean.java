@@ -92,10 +92,10 @@ public class GoogleServiceBean implements GoogleService{
 
         HashMap<String, Object> returnHashMap = new HashMap<>();
 
-
         //TODO: возможно стоит разбить метод на дефолтный и кастомный,
         // и в кастомный передавать строку с запросом
         String dynamicTestString = "names,emailAddresses,birthdays";
+
         person.getNames().get(0).getDisplayName();
         ArrayList<String> fetchingAttributes = new ArrayList<>(Arrays.asList(dynamicTestString.split(",", 0)));
         fetchingAttributes.forEach(entry ->{
@@ -103,32 +103,35 @@ public class GoogleServiceBean implements GoogleService{
                 Method methodToCall = person.getClass().getDeclaredMethod("get"+ StringUtils.capitalize(entry));
                 List<Object> objectList = (List<Object>) methodToCall.invoke(person);
                 if (!objectList.isEmpty()){
-                    Method additionalMethod = null;
-                    switch (entry){
-                        case "names":
-                            additionalMethod = Name.class.getDeclaredMethod("getDisplayName");
-                            break;
-                        case "emailAddresses":
-                            additionalMethod = EmailAddress.class.getDeclaredMethod("getValue");
-                            break;
-                        case "birthdays":
-                            //можно использовать getText()
-                            additionalMethod = Birthday.class.getDeclaredMethod("getDate");
-                            break;
-                    }
-
+                    Method additionalMethod = defineGetValueMethod(entry);
                     if (additionalMethod != null){
                         returnHashMap.put(entry, additionalMethod.invoke(objectList.get(0)));
                     }
-
                 }
-
             } catch (Exception e){
                 log.severe("sneed");
             }
         });
 
         return returnHashMap;
+    }
+
+    //TODO: закончить работу со всеми возможными пунктами скоупа
+    private Method defineGetValueMethod(String attributeName) throws NoSuchMethodException {
+        Method returnMethod = null;
+        switch (attributeName){
+            case "names":
+                returnMethod = Name.class.getDeclaredMethod("getDisplayName");
+                break;
+            case "emailAddresses":
+                returnMethod = EmailAddress.class.getDeclaredMethod("getValue");
+                break;
+            case "birthdays":
+                //можно использовать getText()
+                returnMethod = Birthday.class.getDeclaredMethod("getDate");
+                break;
+        }
+        return returnMethod;
     }
 
     protected PeopleService getPeopleService(String accessToken) {
